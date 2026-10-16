@@ -1,0 +1,14 @@
+{
+  "name": "formscriptkit",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Run Dynamics 365 model-driven form scripts unchanged in a Node vm sandbox against a fake Xrm client API, and test them with node:test.",
+  "license": "MIT",
+  "main": "harness/index.js",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test"
+  }
+}

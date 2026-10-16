@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Sample &amp; page</title>
+<script type="application/json">{"greeting": "hi"}</script>
+<script src="sample-external.js"></script>
+<!--
+<script>window.khCommentedOut = true;</script>
+-->
+</head>
+<body>
+<input id="company" value="Fabrikam &amp; Sons &quot;East&quot;">
+<input id="agree" type="checkbox" checked>
+<button id="go" disabled>Go</button>
+<button id="reset" type="button">Reset</button>
+<button id="done" type="button">Done</button>
+<p id="notice" hidden>Hidden text</p>
+<textarea id="comments">First line &lt;b&gt;</textarea>
+<span id="status"></span>
+<script>
+(function () {
+  "use strict";
+
+  window.khEvents = [];
+  window.khReadyStateWhileRunning = document.readyState;
+  window.khExternalRunsSeen = window.khExternalRuns || 0;
+  window.khData = new URLSearchParams(location.search).get("data");
+
+  function note(text) {
+    window.khEvents.push(text);
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    note("DOMContentLoaded:" + document.readyState);
+  });
+  window.addEventListener("load", function () {
+    note("load");
+  });
+
+  document.getElementById("go").addEventListener("click", function () {
+    note("go");
+  });
+  document.getElementById("reset").addEventListener("click", function () {
+    document.getElementById("status").textContent = "reset";
+    note("reset");
+  });
+  document.getElementById("done").addEventListener("click", function () {
+    window.close();
+  });
+  document.getElementById("company").addEventListener("input", function (event) {
+    note("input:" + event.target.value);
+  });
+  document.getElementById("company").addEventListener("change", function (event) {
+    note("change:" + event.target.value);
+  });
+
+  if (window.khData === "explode") {
+    throw new Error("the sample page failed on purpose");
+  }
+})();
+</script>
+</body>
+</html>

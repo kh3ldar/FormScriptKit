@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quick note</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 16px 20px;
+    font: 14px/1.45 system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color: #222;
+    background: #fff;
+  }
+  .context { margin: 0 0 12px; color: #555; }
+  label { display: block; margin: 12px 0 4px; font-weight: 600; }
+  input, textarea {
+    width: 100%;
+    padding: 6px 8px;
+    font: inherit;
+    border: 1px solid #999;
+    border-radius: 3px;
+  }
+  textarea { min-height: 120px; resize: vertical; }
+  .error { min-height: 1.45em; margin: 8px 0 0; color: #b00020; }
+  .buttons { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+  button {
+    min-width: 88px;
+    padding: 6px 14px;
+    font: inherit;
+    border: 1px solid #999;
+    border-radius: 3px;
+    background: #f4f4f4;
+    cursor: pointer;
+  }
+  button.primary { border-color: #24508f; background: #24508f; color: #fff; }
+  button:disabled { opacity: 0.5; cursor: default; }
+</style>
+</head>
+<body>
+<p id="context" class="context"></p>
+
+<label for="noteTitle">Title</label>
+<input id="noteTitle" type="text" maxlength="200" autocomplete="off">
+
+<label for="noteText">Note</label>
+<textarea id="noteText"></textarea>
+
+<p id="error" class="error" role="alert"></p>
+
+<div class="buttons">
+  <button id="save" type="button" class="primary">Add note</button>
+  <button id="cancel" type="button">Cancel</button>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var MSG_NO_KEY = "Open this dialog from a record to add a note.";
+  var MSG_EMPTY = "Write the note before adding it.";
+  var MSG_STORAGE = "This browser blocked session storage, so the note can't be handed back to the form.";
+
+  function parseObject(text) {
+    try {
+      var value = JSON.parse(text);
+      return value !== null && typeof value === "object" && !Array.isArray(value) ? value : null;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  // The form script's JSON comes in the "data" URL parameter, which URLSearchParams
+  // decodes once. If the value was URL-encoded an extra time on its way into
+  // the URL, the first parse fails and a second decode recovers it.
+  function readDialogData() {
+    var value = new URLSearchParams(location.search).get("data");
+    if (value === null) {
+      return {};
+    }
+    var candidates = [value];
+    try {
+      candidates.push(decodeURIComponent(value));
+    } catch (malformed) {
+      // Not percent-encoded text; only the value as given can be parsed.
+    }
+    for (var i = 0; i < candidates.length; i++) {
+      var parsed = parseObject(candidates[i]);
+      if (parsed) {
+        return parsed;
+      }
+    }
+    return {};
+  }
+
+  var params = readDialogData();
+  var resultKey = typeof params.resultKey === "string" && params.resultKey !== "" ? params.resultKey : null;
+  var recordName = typeof params.recordName === "string" ? params.recordName : "";
+
+  var contextLine = document.getElementById("context");
+  var titleBox = document.getElementById("noteTitle");
+  var textBox = document.getElementById("noteText");
+  var errorLine = document.getElementById("error");
+  var saveButton = document.getElementById("save");
+  var cancelButton = document.getElementById("cancel");
+
+  function showError(message) {
+    errorLine.textContent = message;
+  }
+
+  contextLine.textContent = recordName !== ""
+    ? "Adds a note to " + recordName + "."
+    : "Adds a note to this record.";
+
+  if (!resultKey) {
+    showError(MSG_NO_KEY);
+    saveButton.disabled = true;
+  }
+
+  saveButton.addEventListener("click", function () {
+    if (!resultKey) {
+      return;
+    }
+    var title = titleBox.value.trim();
+    var text = textBox.value.trim();
+    if (text === "") {
+      showError(MSG_EMPTY);
+      textBox.focus();
+      return;
+    }
+    showError("");
+    try {
+      sessionStorage.setItem(resultKey, JSON.stringify({ confirmed: true, title: title, text: text }));
+    } catch (error) {
+      showError(MSG_STORAGE);
+      return;
+    }
+    // Best effort: if the host ignores close(), the dialog's own X still works
+    // and the form script reads the stored result when the dialog closes.
+    window.close();
+  });
+
+  cancelButton.addEventListener("click", function () {
+    if (resultKey) {
+      try {
+        sessionStorage.removeItem(resultKey);
+      } catch (error) {
+        // Nothing was stored that could be withdrawn.
+      }
+    }
+    window.close();
+  });
+})();
+</script>
+</body>
+</html>
